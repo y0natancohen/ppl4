@@ -3,9 +3,30 @@ import { strict as assert } from 'assert';
 import { makeDefineExp, makeNumExp, makeProcExp, makeVarDecl, makeVarRef, parse } from './L5-ast';
 import { typeofExp, L5typeof } from './L5-typecheck';
 import { makeEmptyTEnv, makeExtendTEnv } from './TEnv';
-import { makeBoolTExp, makeNumTExp, makeProcTExp, makeTVar, makeVoidTExp, parseTE, unparseTExp } from './TExp';
+import {
+    makeBoolTExp,
+    makeNumTExp,
+    makeProcTExp, makeStrTExp,
+    makeTVar,
+    makeUnionTExp,
+    makeVoidTExp,
+    parseTE,
+    unparseTExp
+} from './TExp';
 
 // parseTE
+assert.deepEqual(parseTE("(number | string)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+assert.deepEqual(parseTE("(string | number)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+assert.deepEqual(parseTE("((number | boolean) -> (number -> number))"),
+    makeProcTExp([makeUnionTExp([makeNumTExp(), makeBoolTExp()])], makeProcTExp([makeNumTExp()], makeNumTExp())));
+assert.deepEqual(parse("(define (a : (number | boolean | string | (number -> number))) 1)"),
+    makeDefineExp(makeVarDecl("a", makeUnionTExp([makeNumTExp(), makeStrTExp(), makeProcTExp([makeNumTExp()],makeNumTExp()), makeBoolTExp()])), makeNumExp(1)));
+
+// assert.deepEqual(parse("(lambda ((x : number)) : number x)"),
+//     makeProcExp([makeVarDecl("x", makeNumTExp())], [makeVarRef("x")], makeNumTExp()));
+
+
+
 assert.deepEqual(parseTE("number"), makeNumTExp());
 assert.deepEqual(parseTE("boolean"), makeBoolTExp());
 assert.deepEqual(parseTE("T1"), makeTVar("T1"));
