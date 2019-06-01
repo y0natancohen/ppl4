@@ -1,30 +1,32 @@
 // L5-typecheck
 // ========================================================
 import deepEqual = require("deep-equal");
-import { map, zip, zipWith } from 'ramda';
-import { isAppExp, isBoolExp, isDefineExp, isEmpty, isIfExp, isLetrecExp, isLetExp, isNumExp,
-         isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parse, unparse,
-         AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, LitExp, NumExp,
-         Parsed, PrimOp, ProcExp, Program, SetExp, StrExp } from "./L5-ast";
-import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
+import {map, zip, zipWith} from 'ramda';
+import {
+    isAppExp, isBoolExp, isDefineExp, isEmpty, isIfExp, isLetrecExp, isLetExp, isNumExp,
+    isPrimOp, isProcExp, isProgram, isStrExp, isVarRef, parse, unparse,
+    AppExp, BoolExp, DefineExp, Exp, IfExp, LetrecExp, LetExp, LitExp, NumExp,
+    Parsed, PrimOp, ProcExp, Program, SetExp, StrExp
+} from "./L5-ast";
+import {applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv} from "./TEnv";
 // import { isEmpty, isLetrecExp, isLitExp, isStrExp, BoolExp } from "./L5-ast";
 import {
     isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
     parseTE, unparseTExp,
     BoolTExp, NumTExp, ProcTExp, StrTExp, TExp, AtomicTExp, CompoundTExp, TVar, UnionTExp, isAtomicTExp, isUnionTExp
 } from "./TExp";
-import { getErrorMessages, hasNoError, isError } from './error';
-import { allT, first, rest, second } from './list';
+import {getErrorMessages, hasNoError, isError} from './error';
+import {allT, first, rest, second} from './list';
 
 // Purpose: Check that type expressions are equivalent
 // as part of a fully-annotated type check process of exp.
 // Return an error if the types are different - true otherwise.
 // Exp is only passed for documentation purposes.
 const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | Error =>
-  isError(te1) ? te1 :
-  isError(te2) ? te2 :
-  deepEqual(te1, te2) ||
-  Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)} in ${unparse(exp)}`);
+    isError(te1) ? te1 :
+        isError(te2) ? te2 :
+            deepEqual(te1, te2) ||
+            Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)} in ${unparse(exp)}`);
 
 const checkEqualType1 = (te1: TExp | Error, te2: TExp | Error): true | Error =>
     isError(te1) ? te1 :
@@ -46,27 +48,27 @@ export const L5typeof = (concreteExp: string): string | Error =>
 // We assume that all variables and procedures have been explicitly typed in the program.
 export const typeofExp = (exp: Parsed | Error, tenv: TEnv): TExp | Error =>
     isNumExp(exp) ? typeofNum(exp) :
-    isBoolExp(exp) ? typeofBool(exp) :
-    isStrExp(exp) ? typeofStr(exp) :
-    isPrimOp(exp) ? typeofPrim(exp) :
-    isVarRef(exp) ? applyTEnv(tenv, exp.var) :
-    isIfExp(exp) ? typeofIf(exp, tenv) :
-    isProcExp(exp) ? typeofProc(exp, tenv) :
-    isAppExp(exp) ? typeofApp(exp, tenv) :
-    isLetExp(exp) ? typeofLet(exp, tenv) :
-    isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
-    isDefineExp(exp) ? typeofDefine(exp, tenv) :
-    isProgram(exp) ? typeofProgram(exp, tenv) :
-    // Skip isSetExp(exp) isLitExp(exp)
-    Error("Unknown type");
+        isBoolExp(exp) ? typeofBool(exp) :
+            isStrExp(exp) ? typeofStr(exp) :
+                isPrimOp(exp) ? typeofPrim(exp) :
+                    isVarRef(exp) ? applyTEnv(tenv, exp.var) :
+                        isIfExp(exp) ? typeofIf(exp, tenv) :
+                            isProcExp(exp) ? typeofProc(exp, tenv) :
+                                isAppExp(exp) ? typeofApp(exp, tenv) :
+                                    isLetExp(exp) ? typeofLet(exp, tenv) :
+                                        isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
+                                            isDefineExp(exp) ? typeofDefine(exp, tenv) :
+                                                isProgram(exp) ? typeofProgram(exp, tenv) :
+                                                    // Skip isSetExp(exp) isLitExp(exp)
+                                                    Error("Unknown type");
 
 // Purpose: Compute the type of a sequence of expressions
 // Check all the exps in a sequence - return type of last.
 // Pre-conditions: exps is not empty.
 export const typeofExps = (exps: Exp[], tenv: TEnv): TExp | Error =>
     isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
-    isError(typeofExp(first(exps), tenv)) ? typeofExp(first(exps), tenv) :
-    typeofExps(rest(exps), tenv);
+        isError(typeofExp(first(exps), tenv)) ? typeofExp(first(exps), tenv) :
+            typeofExps(rest(exps), tenv);
 
 // a number literal has type num-te
 export const typeofNum = (n: NumExp): NumTExp => makeNumTExp();
@@ -86,15 +88,15 @@ const typePredTExp = parseTE('(T -> boolean)');
 // cons, car, cdr are not covered in this version
 export const typeofPrim = (p: PrimOp): TExp | Error =>
     ['+', '-', '*', '/'].includes(p.op) ? numOpTExp :
-    ['and', 'or'].includes(p.op) ? boolOpTExp :
-    ['>', '<', '='].includes(p.op) ? numCompTExp :
-    ['number?', 'boolean?', 'string?', 'symbol?', 'list?'].includes(p.op) ? typePredTExp :
-    (p.op === 'not') ? parseTE('(boolean -> boolean)') :
-    (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
-    (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
-    (p.op === 'display') ? parseTE('(T -> void)') :
-    (p.op === 'newline') ? parseTE('(Empty -> void)') :
-    Error(`Unknown primitive ${p.op}`);
+        ['and', 'or'].includes(p.op) ? boolOpTExp :
+            ['>', '<', '='].includes(p.op) ? numCompTExp :
+                ['number?', 'boolean?', 'string?', 'symbol?', 'list?'].includes(p.op) ? typePredTExp :
+                    (p.op === 'not') ? parseTE('(boolean -> boolean)') :
+                        (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
+                            (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
+                                (p.op === 'display') ? parseTE('(T -> void)') :
+                                    (p.op === 'newline') ? parseTE('(Empty -> void)') :
+                                        Error(`Unknown primitive ${p.op}`);
 
 
 // Purpose: compute the type of an if-exp
@@ -141,12 +143,12 @@ export const typeofProc = (proc: ProcExp, tenv: TEnv): TExp | Error => {
 // We also check the correct number of arguments is passed.
 export const typeofApp = (app: AppExp, tenv: TEnv): TExp | Error => {
     const ratorTE = typeofExp(app.rator, tenv);
-    if (! isProcTExp(ratorTE))
+    if (!isProcTExp(ratorTE))
         return Error(`Application of non-procedure: ${unparseTExp(ratorTE)} in ${unparse(app)}`);
     if (app.rands.length !== ratorTE.paramTEs.length)
         return Error(`Wrong parameter numbers passed to proc: ${unparse(app)}`);
     const constraints = zipWith((rand, trand) => checkEqualType(typeofExp(rand, tenv), trand, app),
-                                app.rands, ratorTE.paramTEs);
+        app.rands, ratorTE.paramTEs);
     if (hasNoError(constraints))
         return ratorTE.returnTE;
     else
@@ -165,7 +167,7 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): TExp | Error => {
     const vals = map((b) => b.val, exp.bindings);
     const varTEs = map((b) => b.var.texp, exp.bindings);
     const constraints = zipWith((varTE, val) => checkEqualType(varTE, typeofExp(val, tenv), exp),
-                                varTEs, vals);
+        varTEs, vals);
     if (hasNoError(constraints))
         return typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv));
     else
@@ -186,7 +188,7 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): TExp | Error => {
 export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): TExp | Error => {
     const ps = map((b) => b.var.var, exp.bindings);
     const procs = map((b) => b.val, exp.bindings);
-    if (! allT(isProcExp, procs))
+    if (!allT(isProcExp, procs))
         return Error(`letrec - only support binding of procedures - ${exp}`);
     const paramss = map((p) => p.args, procs);
     const bodies = map((p) => p.body, procs);
@@ -194,14 +196,18 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): TExp | Error => {
     const tis = map((proc) => proc.returnTE, procs);
     const tenvBody = makeExtendTEnv(ps, zipWith((tij, ti) => makeProcTExp(tij, ti), tijs, tis), tenv);
     const tenvIs = zipWith((params, tij) => makeExtendTEnv(map((p) => p.var, params), tij, tenvBody),
-                           paramss, tijs);
+        paramss, tijs);
     const types = zipWith((bodyI, tenvI) => typeofExps(bodyI, tenvI), bodies, tenvIs)
-    const constraints : (true | Error)[] = zipWith((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis);
+    const constraints: (true | Error)[] = zipWith((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis);
     if (hasNoError(constraints))
         return typeofExps(exp.body, tenvBody);
     else
         return Error(getErrorMessages(constraints));
 };
+export const isPartial = (exp: TExp, unionExp: UnionTExp): boolean => {
+    return unionExp.texps.filter(texp => checkEqualType1(texp, exp)).length > 0;
+};
+
 
 // Typecheck a full program
 // TODO: Thread the TEnv (as in L1)
@@ -225,29 +231,29 @@ export const typeofProgram = (exp: Program, tenv: TEnv): TExp | Error => {
 
 export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
     // AtomicTExp (NumTExp | BoolTExp | StrTExp | VoidTExp) | CompoundTExp (ProcTExp | TupleTExp ) | TVar | UnionTExp
-    if (isError(te1)){
+    if (isError(te1)) {
         return te1;
-    } else if (isError(te2)){
+    } else if (isError(te2)) {
         return te2;
-    }else if (isAtomicTExp(te1) && isAtomicTExp(te2)){
+    } else if (isAtomicTExp(te1) && isAtomicTExp(te2)) {
         return checkEqualType1(te1, te2);
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
         // wait for elad
-    } else if (isAtomicTExp(te1) && isProcTExp(te2)){
+    } else if (isAtomicTExp(te1) && isProcTExp(te2)) {
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
-    } else if (isUnionTExp(te1) && isAtomicTExp(te2)){
+    } else if (isUnionTExp(te1) && isAtomicTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
 
     }
 };
