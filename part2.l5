@@ -1,4 +1,23 @@
-#lang racket
+;(define (make-tree : (T1*...*Tn -> List(T1,...,Tn)) : (T1*...*Tn -> List(T1,...,Tn)) list)
+
+;(define (add-subtree: (T1*T2 -> Pair(T1, T2))) : (T1*T2 -> Pair(T1, T2)) cons)
+
+;(define (make-leaf: (T1 -> T1)) (lambda((d : T1)) : T1 d))
+
+;(define (empty-tree : EmptyList) empty)
+
+;(define (first-subtree: (Pair(T1, T2) -> T1)) : ((T1, T2) -> T1) car)
+
+;(define (first-subtree: (Pair(T1, T2) -> T2)) : ((T1, T2) -> T1) cdr)
+
+;(define (leaf-data: (T1 -> T1)) (lambda ((x: T1)) : T1 x))
+
+;(define (composite-tree? : (T1 -> boolean)) : (T1 -> boolean) pair?)
+
+;(define (leaf? : (T1 -> boolean)) (lambda ((t : T1)) : boolean (not (list? t))))
+
+;(define (empty-tree? : (T1 -> boolean)) : (T1 -> boolean) empty?)
+
 (define make-tree list)
 (define add-subtree cons)
 (define make-leaf (lambda (d) d))
