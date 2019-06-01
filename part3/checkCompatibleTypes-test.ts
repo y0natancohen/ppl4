@@ -12,6 +12,7 @@ import {
     unparseTExp
 } from './TExp';
 
+//todo: add task + test for combine union (number | number ) into number
 
 // Comparing 2 atomic types
 assert.deepEqual(checkCompatibleTypes(makeEmptyTupleTExp(), makeUnionTExp([makeEmptyTupleTExp(), makeTVar("bi")])), true);

@@ -30,7 +30,7 @@ import {
     UnionTExp,
     isAtomicTExp,
     isUnionTExp,
-    isTVar
+    isTVar, isNonEmptyTupleTExp, isEmptyTupleTExp, isTupleTExp
 } from "./TExp";
 import {getErrorMessages, hasNoError, isError} from './error';
 import {allT, first, rest, second} from './list';
@@ -127,8 +127,8 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | Error => {
     const testTE = typeofExp(ifExp.test, tenv);
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
-    const constraint1 = checkEqualType(testTE, makeBoolTExp(), ifExp);
-    const constraint2 = checkEqualType(thenTE, altTE, ifExp);
+    const constraint1 = checkCompatibleTypes(testTE, makeBoolTExp());
+    const constraint2 = checkCompatibleTypes(thenTE, altTE);
     if (isError(constraint1))
         return constraint1;
     else if (isError(constraint2))
@@ -144,7 +144,7 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | Error => {
 export const typeofProc = (proc: ProcExp, tenv: TEnv): TExp | Error => {
     const argsTEs = map((vd) => vd.texp, proc.args);
     const extTEnv = makeExtendTEnv(map((vd) => vd.var, proc.args), argsTEs, tenv);
-    const constraint1 = checkEqualType(typeofExps(proc.body, extTEnv), proc.returnTE, proc);
+    const constraint1 = checkCompatibleTypes(typeofExps(proc.body, extTEnv), proc.returnTE);
     if (isError(constraint1))
         return constraint1;
     else
@@ -165,7 +165,7 @@ export const typeofApp = (app: AppExp, tenv: TEnv): TExp | Error => {
         return Error(`Application of non-procedure: ${unparseTExp(ratorTE)} in ${unparse(app)}`);
     if (app.rands.length !== ratorTE.paramTEs.length)
         return Error(`Wrong parameter numbers passed to proc: ${unparse(app)}`);
-    const constraints = zipWith((rand, trand) => checkEqualType(typeofExp(rand, tenv), trand, app),
+    const constraints = zipWith((rand, trand) => checkCompatibleTypes(typeofExp(rand, tenv), trand),
         app.rands, ratorTE.paramTEs);
     if (hasNoError(constraints))
         return ratorTE.returnTE;
@@ -184,7 +184,7 @@ export const typeofLet = (exp: LetExp, tenv: TEnv): TExp | Error => {
     const vars = map((b) => b.var.var, exp.bindings);
     const vals = map((b) => b.val, exp.bindings);
     const varTEs = map((b) => b.var.texp, exp.bindings);
-    const constraints = zipWith((varTE, val) => checkEqualType(varTE, typeofExp(val, tenv), exp),
+    const constraints = zipWith((varTE, val) => checkCompatibleTypes(varTE, typeofExp(val, tenv)),
         varTEs, vals);
     if (hasNoError(constraints))
         return typeofExps(exp.body, makeExtendTEnv(vars, varTEs, tenv));
@@ -215,8 +215,9 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): TExp | Error => {
     const tenvBody = makeExtendTEnv(ps, zipWith((tij, ti) => makeProcTExp(tij, ti), tijs, tis), tenv);
     const tenvIs = zipWith((params, tij) => makeExtendTEnv(map((p) => p.var, params), tij, tenvBody),
         paramss, tijs);
-    const types = zipWith((bodyI, tenvI) => typeofExps(bodyI, tenvI), bodies, tenvIs)
-    const constraints: (true | Error)[] = zipWith((typeI, ti) => checkEqualType(typeI, ti, exp), types, tis);
+    const types = zipWith((bodyI, tenvI) => typeofExps(bodyI, tenvI), bodies, tenvIs);
+    const constraints: (true | Error)[] = zipWith((typeI, ti) => checkCompatibleTypes(typeI, ti), types, tis)
+        .map(x => !x ? Error("error") : x);
     if (hasNoError(constraints))
         return typeofExps(exp.body, tenvBody);
     else
@@ -228,13 +229,12 @@ export const isPartial = (te1: TExp, te2: TExp): boolean => {
             let eq = checkEqualType1(texp, te1);
             return !isError(eq) && eq;
         }).length > 0;
-    }else if (isTVar(te1) && isUnionTExp(te2)) {
+    } else if ((isTVar(te1) || isTupleTExp(te1)) && isUnionTExp(te2)) {
         return te2.texps.filter(texp => {
             let eq = checkCompatibleTypes(texp, te1);
             return !isError(eq) && eq;
         }).length > 0;
-    }
-    else if (isUnionTExp(te1) && isUnionTExp(te2)) {
+    } else if (isUnionTExp(te1) && isUnionTExp(te2)) {
         return te1.texps.reduce((acc, curr) => {
             let eq = checkCompatibleTypes(curr, te2);
             return acc && (!isError(eq) && eq);
@@ -264,7 +264,7 @@ export const typeofProgram = (exp: Program, tenv: TEnv): TExp | Error => {
 };
 
 
-export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
+export const checkCompatibleTypes = (te1: TExp | Error, te2: TExp | Error): boolean | Error => {
     // AtomicTExp (NumTExp | BoolTExp | StrTExp | VoidTExp) | CompoundTExp (ProcTExp | TupleTExp ) | TVar | UnionTExp
     if (isError(te1)) {
         return te1;
@@ -309,5 +309,7 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
 
     } else if (isTVar(te1) && isUnionTExp(te2)) {
         return isPartial(te1, te2);
+    } else if (isTupleTExp(te1) && isUnionTExp(te2)) {
+        return isPartial(te1, te2)
     } else return checkEqualType1(te1, te2)
 };
