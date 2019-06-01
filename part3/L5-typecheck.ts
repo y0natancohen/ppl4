@@ -11,9 +11,26 @@ import {
 import {applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv} from "./TEnv";
 // import { isEmpty, isLetrecExp, isLitExp, isStrExp, BoolExp } from "./L5-ast";
 import {
-    isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
-    parseTE, unparseTExp,
-    BoolTExp, NumTExp, ProcTExp, StrTExp, TExp, AtomicTExp, CompoundTExp, TVar, UnionTExp, isAtomicTExp, isUnionTExp
+    isProcTExp,
+    makeBoolTExp,
+    makeNumTExp,
+    makeProcTExp,
+    makeStrTExp,
+    makeVoidTExp,
+    parseTE,
+    unparseTExp,
+    BoolTExp,
+    NumTExp,
+    ProcTExp,
+    StrTExp,
+    TExp,
+    AtomicTExp,
+    CompoundTExp,
+    TVar,
+    UnionTExp,
+    isAtomicTExp,
+    isUnionTExp,
+    isTVar
 } from "./TExp";
 import {getErrorMessages, hasNoError, isError} from './error';
 import {allT, first, rest, second} from './list';
@@ -206,13 +223,22 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): TExp | Error => {
         return Error(getErrorMessages(constraints));
 };
 export const isPartial = (te1: TExp, te2: TExp): boolean => {
-    if(isAtomicTExp(te1) && isUnionTExp(te2)){
-        return te2.texps.filter(texp => checkEqualType1(texp, te1)).length > 0;
-    }else if(isUnionTExp(te1) && isUnionTExp(te2)){
+    if (isAtomicTExp(te1) && isUnionTExp(te2)) {
+        return te2.texps.filter(texp => {
+            let eq = checkEqualType1(texp, te1);
+            return !isError(eq) && eq;
+        }).length > 0;
+    }else if (isTVar(te1) && isUnionTExp(te2)) {
+        return te2.texps.filter(texp => {
+            let eq = checkCompatibleTypes(texp, te1);
+            return !isError(eq) && eq;
+        }).length > 0;
+    }
+    else if (isUnionTExp(te1) && isUnionTExp(te2)) {
         return te1.texps.reduce((acc, curr) => {
-            return acc || te2.texps.includes(curr);
-        },false);
-
+            let eq = checkCompatibleTypes(curr, te2);
+            return acc && (!isError(eq) && eq);
+        }, true);
     }
     return false;
 };
@@ -240,43 +266,48 @@ export const typeofProgram = (exp: Program, tenv: TEnv): TExp | Error => {
 
 export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
     // AtomicTExp (NumTExp | BoolTExp | StrTExp | VoidTExp) | CompoundTExp (ProcTExp | TupleTExp ) | TVar | UnionTExp
-    if (isError(te1)){
+    if (isError(te1)) {
         return te1;
 
-    } else if (isError(te2)){
+    } else if (isError(te2)) {
         return te2;
 
-    }else if (isAtomicTExp(te1) && isAtomicTExp(te2)){
-        return checkEqualType1(te1, te2);
+    } else if (isAtomicTExp(te1) && isAtomicTExp(te2)) {
+        let eq = checkEqualType1(te1, te2);
+        return isError(eq) ? false : eq;
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
-        return isPartial(te1,te2);
-
-    } else if (isAtomicTExp(te1) && isProcTExp(te2)){
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
-
-    } else if (isUnionTExp(te1) && isAtomicTExp(te2)){
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
-
-    } else if (isUnionTExp(te1) && isUnionTExp(te2)){
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)) {
         return isPartial(te1, te2);
 
-    } else if (isUnionTExp(te1) && isProcExp(te2)){
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+    } else if (isAtomicTExp(te1) && isProcTExp(te2)) {
+        return false;
 
-    } else if (isProcTExp(te1) && isAtomicTExp(te2)){
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+    } else if (isUnionTExp(te1) && isAtomicTExp(te2)) {
+        return false;
 
-    } else if (isProcTExp(te1) && isUnionTExp(te2)){
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+    } else if (isUnionTExp(te1) && isUnionTExp(te2)) {
+        return isPartial(te1, te2);
 
-    } else if (isProcTExp(te1) && isProcTExp(te2)){
-        if (te1.paramTEs.length === te2.paramTEs.length){
-            if (hasNoError(zipWith(checkCompatibleTypes, te1.paramTEs, te2.paramTEs))){
+    } else if (isUnionTExp(te1) && isProcTExp(te2)) {
+        return false;
+
+    } else if (isProcTExp(te1) && isAtomicTExp(te2)) {
+        return false;
+
+    } else if (isProcTExp(te1) && isUnionTExp(te2)) {
+        return false;
+
+    } else if (isProcTExp(te1) && isProcTExp(te2)) {
+        if (te1.paramTEs.length === te2.paramTEs.length) {
+            if (zipWith(checkCompatibleTypes, te1.paramTEs, te2.paramTEs).every((x) => {
+                return !isError(x) && x;
+            })) {
                 return checkCompatibleTypes(te1.returnTE, te2.returnTE);
             }
         }
-        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+        return false;
 
+    } else if (isTVar(te1) && isUnionTExp(te2)) {
+        return isPartial(te1, te2);
     } else return checkEqualType1(te1, te2)
 };

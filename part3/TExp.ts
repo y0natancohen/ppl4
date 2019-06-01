@@ -37,7 +37,7 @@ import {getErrorMessages, hasNoError, isError, safeF, safeFL} from './error';
 import {first, rest} from './list';
 
 export type TExp = AtomicTExp | CompoundTExp | TVar | UnionTExp;
-export const isTExp = (x: any): x is TExp => isAtomicTExp(x) || isCompoundTExp(x) || isTVar(x);
+export const isTExp = (x: any): x is TExp => isAtomicTExp(x) || isCompoundTExp(x) || isTVar(x) || isUnionTExp(x);
 
 export type AtomicTExp = NumTExp | BoolTExp | StrTExp | VoidTExp;
 export const isAtomicTExp = (x: any): x is AtomicTExp =>
