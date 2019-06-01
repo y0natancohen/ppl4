@@ -227,25 +227,38 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
     // AtomicTExp (NumTExp | BoolTExp | StrTExp | VoidTExp) | CompoundTExp (ProcTExp | TupleTExp ) | TVar | UnionTExp
     if (isError(te1)){
         return te1;
+
     } else if (isError(te2)){
         return te2;
+
     }else if (isAtomicTExp(te1) && isAtomicTExp(te2)){
         return checkEqualType1(te1, te2);
+
     } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
         // wait for elad
+
     } else if (isAtomicTExp(te1) && isProcTExp(te2)){
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+
     } else if (isUnionTExp(te1) && isAtomicTExp(te2)){
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isUnionTExp(te1) && isUnionTExp(te2)){
+        // wait for elad
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isUnionTExp(te1) && isProcExp(te2)){
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isProcTExp(te1) && isAtomicTExp(te2)){
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isProcTExp(te1) && isUnionTExp(te2)){
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+    } else if (isProcTExp(te1) && isProcTExp(te2)){
+        if (te1.paramTEs.length === te2.paramTEs.length){
+
+        }
 
     } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
 
