@@ -210,9 +210,9 @@ export const isPartial = (te1: TExp, te2: TExp): boolean => {
         return te2.texps.filter(texp => checkEqualType1(texp, te1)).length > 0;
     }else if(isUnionTExp(te1) && isUnionTExp(te2)){
         return te1.texps.reduce((acc, curr) => {
-            return acc || te2.texps.includes(curr);
-        },false);
-
+            let eq = checkCompatibleTypes(curr, te2);
+            return acc && (!isError(eq) && eq);
+        },true);
     }
     return false;
 };
@@ -259,7 +259,7 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
     } else if (isUnionTExp(te1) && isUnionTExp(te2)){
-        isPartial(te1, te2);
+        return isPartial(te1, te2);
 
     } else if (isUnionTExp(te1) && isProcExp(te2)){
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
