@@ -17,6 +17,7 @@ import {
 } from "./TExp";
 import {getErrorMessages, hasNoError, isError} from './error';
 import {allT, first, rest, second} from './list';
+import has = Reflect.has;
 
 // Purpose: Check that type expressions are equivalent
 // as part of a fully-annotated type check process of exp.
@@ -263,10 +264,11 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
 
     } else if (isProcTExp(te1) && isProcTExp(te2)){
         if (te1.paramTEs.length === te2.paramTEs.length){
-
+            if (hasNoError(zipWith(checkCompatibleTypes, te1.paramTEs, te2.paramTEs))){
+                return checkCompatibleTypes(te1.returnTE, te2.returnTE);
+            }
         }
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
-    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
-
-    }
+    } else return checkEqualType1(te1, te2)
 };
