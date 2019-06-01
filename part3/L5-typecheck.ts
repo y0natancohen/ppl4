@@ -210,9 +210,9 @@ export const isPartial = (te1: TExp, te2: TExp): boolean => {
         return te2.texps.filter(texp => checkEqualType1(texp, te1)).length > 0;
     }else if(isUnionTExp(te1) && isUnionTExp(te2)){
         return te1.texps.reduce((acc, curr) => {
-            let eq = checkCompatibleTypes(curr, te2);
-            return acc && (!isError(eq) && eq);
-        },true);
+            return acc || te2.texps.includes(curr);
+        },false);
+
     }
     return false;
 };
