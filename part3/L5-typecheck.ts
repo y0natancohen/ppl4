@@ -8,9 +8,11 @@ import { isAppExp, isBoolExp, isDefineExp, isEmpty, isIfExp, isLetrecExp, isLetE
          Parsed, PrimOp, ProcExp, Program, SetExp, StrExp } from "./L5-ast";
 import { applyTEnv, makeEmptyTEnv, makeExtendTEnv, TEnv } from "./TEnv";
 // import { isEmpty, isLetrecExp, isLitExp, isStrExp, BoolExp } from "./L5-ast";
-import { isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
-         parseTE, unparseTExp,
-         BoolTExp, NumTExp, ProcTExp, StrTExp, TExp } from "./TExp";
+import {
+    isProcTExp, makeBoolTExp, makeNumTExp, makeProcTExp, makeStrTExp, makeVoidTExp,
+    parseTE, unparseTExp,
+    BoolTExp, NumTExp, ProcTExp, StrTExp, TExp, AtomicTExp, CompoundTExp, TVar, UnionTExp, isAtomicTExp, isUnionTExp
+} from "./TExp";
 import { getErrorMessages, hasNoError, isError } from './error';
 import { allT, first, rest, second } from './list';
 
@@ -23,6 +25,12 @@ const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | 
   isError(te2) ? te2 :
   deepEqual(te1, te2) ||
   Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)} in ${unparse(exp)}`);
+
+const checkEqualType1 = (te1: TExp | Error, te2: TExp | Error): true | Error =>
+    isError(te1) ? te1 :
+        isError(te2) ? te2 :
+            deepEqual(te1, te2) ||
+            Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
 // Compute the type of L5 AST exps to TE
 // ===============================================
@@ -214,6 +222,32 @@ export const typeofProgram = (exp: Program, tenv: TEnv): TExp | Error => {
     return Error("TODO");
 };
 
-// TODO: 
-export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error =>
-    Error("TODO");
+
+export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
+    // AtomicTExp (NumTExp | BoolTExp | StrTExp | VoidTExp) | CompoundTExp (ProcTExp | TupleTExp ) | TVar | UnionTExp
+    if (isError(te1)){
+        return te1;
+    } else if (isError(te2)){
+        return te2;
+    }else if (isAtomicTExp(te1) && isAtomicTExp(te2)){
+        return checkEqualType1(te1, te2);
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+        // wait for elad
+    } else if (isAtomicTExp(te1) && isProcTExp(te2)){
+        return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
+    } else if (isUnionTExp(te1) && isAtomicTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
+
+    }
+};
