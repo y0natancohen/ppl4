@@ -139,13 +139,19 @@ const sortTexps = (texps: TExp[]): TExp[] => {
     )
 };
 
+const filterDuplicates = (texps: TExp[]): TExp[] => {
+    let namesSet = new Set(texps.map(texp=>texp.tag));
+    return Array.from(namesSet).map(name => texps.filter(texp=>texp.tag === name)[0]);
+};
+
+
 export interface UnionTExp {
     tag: "UnionTExp",
     texps: TExp[]
 }
 
 export const makeUnionTExp = (texps: TExp[]): UnionTExp => (
-    {tag: "UnionTExp", texps: sortTexps(texps)});
+    {tag: "UnionTExp", texps: sortTexps(filterDuplicates(texps))});
 export const isUnionTExp = (x: any): x is UnionTExp => x.tag === "UnionTExp";
 
 
@@ -186,6 +192,19 @@ export const parseTExp = (texp: any): TExp | Error =>
                         isArray(texp) ? parseCompoundTExp(texp) :
                             Error(`Unexpected TExp - ${texp}`);
 
+
+const flattenArray = (arr: any[]): any[] =>{
+    let arrays = arr.filter(isArray);
+    if (arrays.length > 0){
+        let notArrays = arr.filter(x=>!(isArray(x)));
+        let oneLevelFlatter = notArrays.concat(arrays.reduce((acc, curr) => acc.concat(curr), []));
+        return flattenArray(oneLevelFlatter);
+    }else {
+        return arr;
+    }
+
+};
+
 /*
 ;; expected structure: (<params> -> <returnte>)
 ;; expected exactly one -> in the list
@@ -203,7 +222,8 @@ const parseCompoundTExp = (texps: any[]): ProcTExp | UnionTExp | Error => {
             } else if ((pos === texps.length - 1)) {
                 return Error(`No return type in proc texp - ${texps}`)
             } else {
-                return safeMakeUnionTExp(texps.filter(x=> x!== '|').map(parseTExp))
+                let flattenTexps = flattenArray(texps);
+                return safeMakeUnionTExp(flattenTexps.filter(x=> x!== '|').map(parseTExp))
             }
         }
     }

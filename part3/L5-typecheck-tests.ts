@@ -15,15 +15,25 @@ import {
 } from './TExp';
 
 // parseTE
+assert.deepEqual(parseTE("(string | number | (string | number))"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+
+
 assert.deepEqual(parseTE("(number | string)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
 assert.deepEqual(parseTE("(string | number)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+assert.deepEqual(parseTE("(string | number | string | string)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+
 assert.deepEqual(parseTE("((number | boolean) -> (number -> number))"),
     makeProcTExp([makeUnionTExp([makeNumTExp(), makeBoolTExp()])], makeProcTExp([makeNumTExp()], makeNumTExp())));
-assert.deepEqual(parse("(define (a : (number | boolean | string | (number -> number))) 1)"),
-    makeDefineExp(makeVarDecl("a", makeUnionTExp([makeNumTExp(), makeStrTExp(), makeProcTExp([makeNumTExp()],makeNumTExp()), makeBoolTExp()])), makeNumExp(1)));
 
-// assert.deepEqual(parse("(lambda ((x : number)) : number x)"),
-//     makeProcExp([makeVarDecl("x", makeNumTExp())], [makeVarRef("x")], makeNumTExp()));
+//TODO error here
+assert.deepEqual(parse("(define (a : (string | (number -> number))) 1)"),
+    makeDefineExp(makeVarDecl("a", makeUnionTExp(
+        [makeStrTExp(), makeProcTExp([makeNumTExp()], makeNumTExp())]
+    )), makeNumExp(1)));
+//TODO error here
+
+assert.deepEqual(parse("(lambda ((x : number)) : number x)"),
+    makeProcExp([makeVarDecl("x", makeNumTExp())], [makeVarRef("x")], makeNumTExp()));
 
 
 
