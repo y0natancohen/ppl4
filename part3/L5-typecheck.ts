@@ -204,8 +204,16 @@ export const typeofLetrec = (exp: LetrecExp, tenv: TEnv): TExp | Error => {
     else
         return Error(getErrorMessages(constraints));
 };
-export const isPartial = (exp: TExp, unionExp: UnionTExp): boolean => {
-    return unionExp.texps.filter(texp => checkEqualType1(texp, exp)).length > 0;
+export const isPartial = (te1: TExp, te2: TExp): boolean => {
+    if(isAtomicTExp(te1) && isUnionTExp(te2)){
+        return te2.texps.filter(texp => checkEqualType1(texp, te1)).length > 0;
+    }else if(isUnionTExp(te1) && isUnionTExp(te2)){
+        return te1.texps.reduce((acc, curr) => {
+            return acc || te2.texps.includes(curr);
+        },false);
+
+    }
+    return false;
 };
 
 
@@ -241,7 +249,7 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
         return checkEqualType1(te1, te2);
 
     } else if (isAtomicTExp(te1) && isUnionTExp(te2)){
-        // wait for elad
+        return isPartial(te1,te2);
 
     } else if (isAtomicTExp(te1) && isProcTExp(te2)){
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
@@ -250,7 +258,7 @@ export const checkCompatibleTypes = (te1: TExp, te2: TExp): boolean | Error => {
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
 
     } else if (isUnionTExp(te1) && isUnionTExp(te2)){
-        // wait for elad
+        isPartial(te1, te2);
 
     } else if (isUnionTExp(te1) && isProcExp(te2)){
         return Error(`Incompatible types: ${unparseTExp(te1)} and ${unparseTExp(te2)}}`);
