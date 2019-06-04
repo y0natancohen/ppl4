@@ -23,6 +23,7 @@ assert.deepEqual(parse("(define (a : (number | string | (number -> number))) 1)"
 
 // parseTE
 assert.deepEqual(parseTE("(string | number | (string | number))"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));
+assert.deepEqual(parseTE("(T1 | T2 | T2)"), makeUnionTExp([makeTVar('T1'), makeTVar('T2')]));
 
 
 assert.deepEqual(parseTE("(number | string)"), makeUnionTExp([makeNumTExp(),makeStrTExp()]));

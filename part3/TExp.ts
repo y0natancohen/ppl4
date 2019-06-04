@@ -140,7 +140,13 @@ const sortTexps = (texps: TExp[]): TExp[] => {
 };
 
 const filterDuplicates = (texps: TExp[]): TExp[] => {
-    let namesSet = new Set(texps.map(texp => texp.tag));
+    let namesSet = new Set(texps.map(texp => {
+        if (isTVar(texp)){
+            return texp.tag + texp.var
+        }else {
+            return texp.tag;
+        }
+    }));
     return Array.from(namesSet).map(name => texps.filter(texp => texp.tag === name)[0]);
 };
 
