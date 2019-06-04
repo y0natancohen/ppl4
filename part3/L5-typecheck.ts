@@ -30,7 +30,7 @@ import {
     UnionTExp,
     isAtomicTExp,
     isUnionTExp,
-    isTVar, isNonEmptyTupleTExp, isEmptyTupleTExp, isTupleTExp
+    isTVar, isNonEmptyTupleTExp, isEmptyTupleTExp, isTupleTExp, makeUnionTExp
 } from "./TExp";
 import {getErrorMessages, hasNoError, isError} from './error';
 import {allT, first, rest, second} from './list';
@@ -123,15 +123,19 @@ export const typeofPrim = (p: PrimOp): TExp | Error =>
 //      type<then>(tenv) = t1
 //      type<else>(tenv) = t1
 // then type<(if test then else)>(tenv) = t1
-export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | Error => {
+export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | UnionTExp | Error => {
     const testTE = typeofExp(ifExp.test, tenv);
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
     const constraint1 = checkCompatibleTypes(testTE, makeBoolTExp());
     if (isError(constraint1))
         return constraint1;
-    else
+    else if(isError(altTE)){
+        return altTE
+    }else if(isError(thenTE) ){
         return thenTE;
+    }
+    else return makeUnionTExp([thenTE, altTE]);
 };
 
 // Purpose: compute the type of a proc-exp
