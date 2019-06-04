@@ -29,6 +29,8 @@
 (define leaf? (lambda (t) (not (list? t))))
 (define empty-tree? empty?)
 
+;; (define (append : (List(T1)*List(T2)-> List((T1|T2)))
+;;   (lambda ((lst1: List(T1)) (lst2 : List(T2)))
 (define append
   (lambda (lst1 lst2)
     (if (empty? lst1)
