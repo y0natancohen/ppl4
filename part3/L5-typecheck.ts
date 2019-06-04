@@ -128,11 +128,8 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | Error => {
     const thenTE = typeofExp(ifExp.then, tenv);
     const altTE = typeofExp(ifExp.alt, tenv);
     const constraint1 = checkCompatibleTypes(testTE, makeBoolTExp());
-    const constraint2 = checkCompatibleTypes(thenTE, altTE);
     if (isError(constraint1))
         return constraint1;
-    else if (isError(constraint2))
-        return constraint2;
     else
         return thenTE;
 };

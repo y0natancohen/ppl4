@@ -140,8 +140,8 @@ const sortTexps = (texps: TExp[]): TExp[] => {
 };
 
 const filterDuplicates = (texps: TExp[]): TExp[] => {
-    let namesSet = new Set(texps.map(texp=>texp.tag));
-    return Array.from(namesSet).map(name => texps.filter(texp=>texp.tag === name)[0]);
+    let namesSet = new Set(texps.map(texp => texp.tag));
+    return Array.from(namesSet).map(name => texps.filter(texp => texp.tag === name)[0]);
 };
 
 
@@ -150,8 +150,11 @@ export interface UnionTExp {
     texps: TExp[]
 }
 
-export const makeUnionTExp = (texps: TExp[]): UnionTExp => (
-    {tag: "UnionTExp", texps: sortTexps(filterDuplicates(texps))});
+export const makeUnionTExp = (texps: TExp[]): UnionTExp | TExp => {
+    let texps1 = sortTexps(filterDuplicates(texps));
+    return texps1.length === 1 ? texps1[0] : {tag: "UnionTExp", texps: texps1}
+    };
+
 export const isUnionTExp = (x: any): x is UnionTExp => x.tag === "UnionTExp";
 
 
@@ -193,13 +196,16 @@ export const parseTExp = (texp: any): TExp | Error =>
                             Error(`Unexpected TExp - ${texp}`);
 
 
-const flattenArray = (arr: any[]): any[] =>{
+const flattenArray = (arr: any[]): any[] => {
     let arrays = arr.filter(isArray);
-    if (arrays.length > 0){
-        let notArrays = arr.filter(x=>!(isArray(x)));
-        let oneLevelFlatter = notArrays.concat(arrays.reduce((acc, curr) => acc.concat(curr), []));
+    let nonProcArrays = arrays.filter((arr: any[]) => arr.every(item => item !== "->"));
+    let procs = arrays.filter((arr: any[]) => arr.some(item => item === "->"));
+    if (nonProcArrays.length > 0) {
+        let notArrays = arr.filter(x => !(isArray(x)));
+        let notArrayWithProcs = notArrays.concat(procs);
+        let oneLevelFlatter = notArrayWithProcs.concat(nonProcArrays.reduce((acc, curr) => acc.concat(curr), []));
         return flattenArray(oneLevelFlatter);
-    }else {
+    } else {
         return arr;
     }
 
@@ -210,7 +216,7 @@ const flattenArray = (arr: any[]): any[] =>{
 ;; expected exactly one -> in the list
 ;; We do not accept (a -> b -> c) - must parenthesize
 */
-const parseCompoundTExp = (texps: any[]): ProcTExp | UnionTExp | Error => {
+const parseCompoundTExp = (texps: any[]): ProcTExp | UnionTExp | Error | TExp => {
     const pipePos = texps.indexOf('|');
     const pos = texps.indexOf('->');
     if (pos === -1) {
@@ -223,7 +229,7 @@ const parseCompoundTExp = (texps: any[]): ProcTExp | UnionTExp | Error => {
                 return Error(`No return type in proc texp - ${texps}`)
             } else {
                 let flattenTexps = flattenArray(texps);
-                return safeMakeUnionTExp(flattenTexps.filter(x=> x!== '|').map(parseTExp))
+                return safeMakeUnionTExp(flattenTexps.filter(x => x !== '|').map(parseTExp))
             }
         }
     }
@@ -240,9 +246,9 @@ const safeMakeProcTExp = (args: Array<TExp | Error>, returnTE: Error | TExp): Er
         hasNoError(args) ? makeProcTExp(args, returnTE) :
             Error(getErrorMessages(args));
 
-const safeMakeUnionTExp = (texps: Array<TExp | Error>): Error | UnionTExp=>
-        hasNoError(texps) ? makeUnionTExp(texps) :
-            Error(getErrorMessages(texps));
+const safeMakeUnionTExp = (texps: Array<TExp | Error>): Error | UnionTExp | TExp =>
+    hasNoError(texps) ? makeUnionTExp(texps) :
+        Error(getErrorMessages(texps));
 
 /*
 ;; Expected structure: <te1> [* <te2> ... * <ten>]?
@@ -269,7 +275,7 @@ const parseTupleTExp = (texps: any[]): Array<TExp | Error> => {
     }
 };
 
-export const unParseUnionTexp = (x: UnionTExp) =>{
+export const unParseUnionTexp = (x: UnionTExp) => {
     return x.texps.map(unparseTExp).join('|');
 };
 
@@ -289,8 +295,8 @@ export const unparseTExp = (te: TExp | Error): string | Error => {
                             isEmptyTVar(x) ? x.var :
                                 isTVar(x) ? up(tvarContents(x)) :
                                     isProcTExp(x) ? [...unparseTuple(x.paramTEs), '->', unparseTExp(x.returnTE)] :
-                                        isUnionTExp(x)? unParseUnionTexp(x):
-                                        ["never"];
+                                        isUnionTExp(x) ? unParseUnionTexp(x) :
+                                            ["never"];
     const unparsed = up(te);
     return isString(unparsed) ? unparsed :
         isError(unparsed) ? unparsed :
