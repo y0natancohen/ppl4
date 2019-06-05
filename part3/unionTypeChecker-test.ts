@@ -31,6 +31,6 @@ assert.deepEqual(parse("(define (a : (string | (number -> number))) 1)"),
 
 // if -tests
 assert.deepEqual(L5typeof("(if (> 1 2) 1 2)"), "number");
-assert.deepEqual(L5typeof("(if (> 1 2) #t (lambda ((x : number)) : number x))"), "boolean|(number -> number)");
-assert.deepEqual(L5typeof("(if (> 1 2) #t (if (> 2 3) 1 eq?))"), "boolean|number|(T1 * T2 -> boolean)");
-assert.deepEqual(L5typeof("(if (> 1 2) #t (if (> 2 3) 1 2))"), "boolean|number");
+assert.deepEqual(L5typeof("(if (> 1 2) #t (lambda ((x : number)) : number x))"), "(boolean | (number -> number))");
+assert.deepEqual(L5typeof("(if (> 1 2) #t (if (> 2 3) 1 eq?))"), "(boolean | (number | (T1 * T2 -> boolean)))");
+assert.deepEqual(L5typeof("(if (> 1 2) #t (if (> 2 3) 1 2))"), "(boolean | number)");
