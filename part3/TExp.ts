@@ -282,7 +282,7 @@ const parseTupleTExp = (texps: any[]): Array<TExp | Error> => {
 };
 
 export const unParseUnionTexp = (x: UnionTExp) => {
-    return x.texps.map(unparseTExp).join('|');
+    return "("+x.texps.map(unparseTExp).join(' | ') +")";
 };
 
 /*
