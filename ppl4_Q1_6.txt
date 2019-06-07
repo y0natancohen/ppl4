@@ -1,0 +1,42 @@
+
+(define even$?_helper
+ (lambda (n cont)
+ (if (= n 0)
+     (cont #t)
+     (odd$?_helper
+      (- n 1) 
+      (lambda (n_minus_1_odd_result)
+        (cont n_minus_1_odd_result)
+      )
+     )
+  )))
+
+(define odd$?_helper
+ (lambda (n cont)
+ (if (= n 0)
+     (cont #f)
+     (even$?_helper
+      (- n 1) 
+      (lambda (n_minus_1_even_result)
+        (cont n_minus_1_even_result)
+      )
+     )
+  )))
+
+(define even$?
+  (lambda (n)
+    (even$?_helper n (lambda (x) x))
+  )
+)
+(define odd$?
+  (lambda (n)
+    (odd$?_helper n (lambda (x) x))
+  )
+)
+
+(define f2
+ (lambda (x)
+ (if (even$? x)
+     x
+     (- x 1)
+  )))
